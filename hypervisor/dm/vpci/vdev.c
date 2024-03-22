@@ -34,8 +34,16 @@
 #include <hash.h>
 
 /**
- * @pre vdev != NULL
+ * @addtogroup vp-dm_vperipheral
+ *
+ * @{
  */
+
+/**
+ * @file
+ * @brief This file implements functions to operate virtual PCI device
+ */
+
 uint32_t pci_vdev_read_vcfg(const struct pci_vdev *vdev, uint32_t offset, uint32_t bytes)
 {
 	uint32_t val;
@@ -55,9 +63,6 @@ uint32_t pci_vdev_read_vcfg(const struct pci_vdev *vdev, uint32_t offset, uint32
 	return val;
 }
 
-/**
- * @pre vdev != NULL
- */
 void pci_vdev_write_vcfg(struct pci_vdev *vdev, uint32_t offset, uint32_t bytes, uint32_t val)
 {
 	switch (bytes) {
@@ -73,10 +78,6 @@ void pci_vdev_write_vcfg(struct pci_vdev *vdev, uint32_t offset, uint32_t bytes,
 	}
 }
 
-/**
- * @pre vpci != NULL
- * @pre vpci->pci_vdev_cnt <= CONFIG_MAX_PCI_DEV_NUM
- */
 struct pci_vdev *pci_find_vdev(struct acrn_vpci *vpci, union pci_bdf vbdf)
 {
 	struct pci_vdev *vdev = NULL, *tmp;
@@ -93,6 +94,16 @@ struct pci_vdev *pci_find_vdev(struct acrn_vpci *vpci, union pci_bdf vbdf)
 	return vdev;
 }
 
+/**
+ * @brief Check if the BAR base address is valid
+ *
+ * @param[in] vm   The data structure of VM.
+ * @param[in] base The base address of a BAR.
+ *
+ * @return TRUE if the base address is valid, otherwise FALSE.
+ *
+ * @pre vm != NULL
+ */
 static bool is_pci_mem_bar_base_valid(struct acrn_vm *vm, uint64_t base)
 {
 	struct acrn_vpci *vpci = &vm->vpci;
@@ -101,6 +112,16 @@ static bool is_pci_mem_bar_base_valid(struct acrn_vm *vm, uint64_t base)
 	return ((base >= res->start) &&  (base <= res->end));
 }
 
+/**
+ * @brief Update the base address of the BAR
+ *
+ * @param[in,out] vdev The data structure of virtual PCI device to access.
+ * @param[in]     idx  The BAR ID to update.
+ *
+ * @return None.
+ *
+ * @pre vdev != NULL
+ */
 static void pci_vdev_update_vbar_base(struct pci_vdev *vdev, uint32_t idx)
 {
 	struct pci_vbar *vbar;
@@ -215,3 +236,7 @@ void pci_vdev_write_vbar(struct pci_vdev *vdev, uint32_t idx, uint32_t val)
 
 	pci_vdev_update_vbar_base(vdev, update_idx);
 }
+
+/**
+ * @}
+ */
