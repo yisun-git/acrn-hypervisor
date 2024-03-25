@@ -33,10 +33,31 @@
 #include <asm/vtd.h>
 #include "vpci_priv.h"
 
+/**
+ * @addtogroup vp-dm_vperipheral
+ *
+ * @{
+ */
 
 /**
+ * @file
+ * @brief This file declares functions to handle MSI
+ *
+ * This file declares functions to initialize/deinit, enable/disable, and remap MSI.
+ *
+ */
+
+/**
+ * @brief Set MSI CTRL register to enable/disable MSI
+ *
+ * @param[in] vdev Pointer to vdev instance.
+ *
+ * @return None
+ *
  * @pre vdev != NULL
  * @pre vdev->pdev != NULL
+ *
+ * @remark This function is called when physical MSI is disabled.
  */
 static inline void enable_disable_msi(const struct pci_vdev *vdev, bool enable)
 {
@@ -51,13 +72,19 @@ static inline void enable_disable_msi(const struct pci_vdev *vdev, bool enable)
 	}
 	pci_pdev_write_cfg(pbdf, capoff + PCIR_MSI_CTRL, 2U, msgctrl);
 }
+
 /**
  * @brief Remap vMSI virtual address and data to MSI physical address and data
- * This function is called when physical MSI is disabled.
+ *
+ * @param[in] vdev Pointer to vdev instance.
+ *
+ * @return None
  *
  * @pre vdev != NULL
  * @pre vdev->vpci != NULL
  * @pre vdev->pdev != NULL
+ *
+ * @remark This function is called when physical MSI is disabled.
  */
 static void remap_vmsi(const struct pci_vdev *vdev)
 {
@@ -94,11 +121,6 @@ static void remap_vmsi(const struct pci_vdev *vdev)
 	}
 }
 
-/**
- * @brief Writing MSI Capability Structure
- *
- * @pre vdev != NULL
- */
 void write_vmsi_cap_reg(struct pci_vdev *vdev, uint32_t offset, uint32_t bytes, uint32_t val)
 {
 	/* Capability ID, Next Capability Pointer and Message Control
@@ -120,10 +142,6 @@ void write_vmsi_cap_reg(struct pci_vdev *vdev, uint32_t offset, uint32_t bytes, 
 	}
 }
 
-/**
- * @pre vdev != NULL
- * @pre vdev->vpci != NULL
- */
 void deinit_vmsi(const struct pci_vdev *vdev)
 {
 	if (has_msi_cap(vdev)) {
@@ -131,10 +149,6 @@ void deinit_vmsi(const struct pci_vdev *vdev)
 	}
 }
 
-/**
- * @pre vdev != NULL
- * @pre vdev->pdev != NULL
- */
 void init_vmsi(struct pci_vdev *vdev)
 {
 	struct pci_pdev *pdev = vdev->pdev;
@@ -154,3 +168,6 @@ void init_vmsi(struct pci_vdev *vdev)
 	}
 }
 
+/**
+ * @}
+ */

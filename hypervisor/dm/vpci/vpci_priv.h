@@ -161,8 +161,47 @@ void deinit_vdev_pt(struct pci_vdev *vdev);
 void vdev_pt_write_vbar(struct pci_vdev *vdev, uint32_t idx, uint32_t val);
 void vdev_pt_map_msix(struct pci_vdev *vdev, bool hold_lock);
 
+/*
+ * @brief Initialize the virtual PCI device MSI caps
+ *
+ * The function gets physical device MSI capability register offset and save it into virtual device. If the
+ * MSI capability register is supported, get the length and mode, then clear the MMC/MME.
+ *
+ * @param[in] vdev Pointer to the virtual PCI device to access.
+ *
+ * @return None
+ *
+ * @pre vdev != NULL
+ * @pre vdev->pdev != NULL
+ */
 void init_vmsi(struct pci_vdev *vdev);
+
+/**
+ * @brief Write MSI capability structure
+ *
+ * @param[in] vdev   Pointer to the virtual PCI device to access.
+ * @param[in] offset Offset to write the MSI capability register.
+ * @param[in] bytes  Length to write the MSI capability register.
+ * @param[in] val    Value to be writen into the MSI capability register.
+ *
+ * @return None
+ *
+ * @pre vdev != NULL
+ */
 void write_vmsi_cap_reg(struct pci_vdev *vdev, uint32_t offset, uint32_t bytes, uint32_t val);
+
+/*
+ * @brief Deinit the virtual PCI device MSI caps
+ *
+ * If the MSI capability register is supported, remove the interrupt remapping.
+ *
+ * @param[in] vdev Pointer to the virtual PCI device to access.
+ *
+ * @return None
+ *
+ * @pre vdev != NULL
+ * @pre vdev->vpci != NULL
+ */
 void deinit_vmsi(const struct pci_vdev *vdev);
 
 void init_vmsix_pt(struct pci_vdev *vdev);
