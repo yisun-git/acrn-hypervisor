@@ -180,9 +180,58 @@ void init_vmsix_on_msi(struct pci_vdev *vdev);
 void write_vmsix_cap_reg_on_msi(struct pci_vdev *vdev, uint32_t offset, uint32_t bytes, uint32_t val);
 void remap_one_vmsix_entry_on_msi(struct pci_vdev *vdev, uint32_t index);
 
+/**
+ * @brief Initialize SRIOV device, i.e. set capability register offset and length
+ *
+ * @param[in] vdev Pointer to SRIOV device.
+ *
+ * @return None.
+ *
+ * @pre vdev != NULL
+ * @pre vdev->pdev != NULL
+ */
 void init_vsriov(struct pci_vdev *vdev);
+
+/**
+ * @brief Read SRIOV device register value
+ *
+ * @param[in]  vdev   Pointer to SRIOV device.
+ * @param[in]  offset Offset of the register to read.
+ * @param[in]  bytes  Bytes to read.
+ * @param[out] val    Buffer of value to be read out.
+ *
+ * @return None.
+ *
+ * @pre vdev != NULL
+ * @pre vdev->pdev != NULL
+ */
 void read_sriov_cap_reg(const struct pci_vdev *vdev, uint32_t offset, uint32_t bytes, uint32_t *val);
+
+/**
+ * @brief Write value to SRIOV device register
+ *
+ * @param[in] vdev   Pointer to SRIOV device.
+ * @param[in] offset Offset of the register to write.
+ * @param[in] bytes  Bytes to write.
+ * @param[in] val    Value to writet.
+ *
+ * @return None.
+ *
+ * @pre vdev != NULL
+ * @pre vdev->pdev != NULL
+ */
 void write_sriov_cap_reg(struct pci_vdev *vdev, uint32_t offset, uint32_t bytes, uint32_t val);
+
+/**
+ * @brief Get offset of VF BAR
+ *
+ * @param[in] pf_vdev Pointer to physical function device.
+ * @param[in] bar_idx VF BAR ID to get offset.
+ *
+ * @return VF BAR offset.
+ *
+ * @pre pf_vdev != NULL
+ */
 uint32_t sriov_bar_offset(const struct pci_vdev *vdev, uint32_t bar_idx);
 
 /**

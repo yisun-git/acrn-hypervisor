@@ -37,6 +37,26 @@
 #include "vpci_priv.h"
 
 /**
+ * @addtogroup vp-dm_vperipheral
+ *
+ * @{
+ */
+
+/**
+ * @file
+ * @brief This file implements functions to operate SRIOV PF/VF
+ */
+
+/**
+ * @brief Get SRIOV VF device number and function number
+ *
+ * @param[in] pf_vdev Pointer to physical function device.
+ * @param[in] fst_off First VF offset.
+ * @param[in] stride  Stride of VF BDF.
+ * @param[in] id      VF ID.
+ *
+ * @return VF device/function number.
+ *
  * @pre pf_vdev != NULL
  */
 static inline uint8_t get_vf_devfun(const struct pci_vdev *pf_vdev, uint16_t fst_off, uint16_t stride, uint16_t id)
@@ -45,6 +65,15 @@ static inline uint8_t get_vf_devfun(const struct pci_vdev *pf_vdev, uint16_t fst
 }
 
 /**
+ * @brief Get SRIOV VF bus number
+ *
+ * @param[in] pf_vdev Pointer to physical function device.
+ * @param[in] fst_off First VF offset.
+ * @param[in] stride  Stride of VF BDF.
+ * @param[in] id      VF ID.
+ *
+ * @return VF bus number.
+ *
  * @pre pf_vdev != NULL
  */
 static inline uint8_t get_vf_bus(const struct pci_vdev *pf_vdev, uint16_t fst_off, uint16_t stride, uint16_t id)
@@ -53,6 +82,13 @@ static inline uint8_t get_vf_bus(const struct pci_vdev *pf_vdev, uint16_t fst_of
 }
 
 /**
+ * @brief Read two bytes from SRIOV device register
+ *
+ * @param[in] pf_vdev Pointer to physical function device.
+ * @param[in] reg     Offset of the register to read.
+ *
+ * @return Two bytes of register value.
+ *
  * @pre pf_vdev != NULL
  */
 static inline uint16_t read_sriov_reg(const struct pci_vdev *pf_vdev, uint16_t reg)
@@ -61,6 +97,12 @@ static inline uint16_t read_sriov_reg(const struct pci_vdev *pf_vdev, uint16_t r
 }
 
 /**
+ * @brief Check if SRIOV VF is enabled
+ *
+ * @param[in] pf_vdev Pointer to physical function device.
+ *
+ * @return Return true if VF is enabled. Otherwise return false.
+ *
  * @pre pf_vdev != NULL
  */
 static bool is_vf_enabled(const struct pci_vdev *pf_vdev)
@@ -72,6 +114,12 @@ static bool is_vf_enabled(const struct pci_vdev *pf_vdev)
 }
 
 /**
+ * @brief Initialize PF vdev SRIOV capability
+ *
+ * @param[in] pf_vdev Pointer to physical function device.
+ *
+ * @return None.
+ *
  * @pre pf_vdev != NULL
  */
 static void init_sriov_vf_bar(struct pci_vdev *pf_vdev)
@@ -80,6 +128,14 @@ static void init_sriov_vf_bar(struct pci_vdev *pf_vdev)
 }
 
 /**
+ * @brief Create a SRIOV VF device
+ *
+ * @param[in] pf_vdev Pointer to physical function device.
+ * @param[in] vf_bdf  BDF of the VF device to be created.
+ * @param[in] vf_id   ID of the VF device to be created.
+ *
+ * @return None.
+ *
  * @pre pf_vdev != NULL
  */
 static void create_vf(struct pci_vdev *pf_vdev, union pci_bdf vf_bdf, uint16_t vf_id)
@@ -148,9 +204,19 @@ static void create_vf(struct pci_vdev *pf_vdev, union pci_bdf vf_bdf, uint16_t v
 }
 
 /**
+ * @brief Create number of SRIOV VF devices according to value set in PCIR_SRIOV_NUMVFS register
+ *
+ * This function is called when the VF enable bit in PCIR_SRIOV_CONTROL is switched to 1 from 0, i.e. enable
+ * the VF. Then, it creates number of SRIOV VF devices according to value set in PCIR_SRIOV_NUMVFS register.
+ *
+ * @param[in] pf_vdev Pointer to physical function device.
+ *
+ * @return None.
+ *
  * @pre pf_vdev != NULL
  * @pre is_vf_enabled(pf_dev) == true
- * @Application constraints: PCIR_SRIOV_NUMVFS register value cannot be 0 if VF_ENABLE is set.
+ *
+ * @remark PCIR_SRIOV_NUMVFS register value cannot be 0 if VF_ENABLE is set.
  */
 static void enable_vfs(struct pci_vdev *pf_vdev)
 {
@@ -230,6 +296,15 @@ static void enable_vfs(struct pci_vdev *pf_vdev)
 }
 
 /**
+ * @brief Disable number of SRIOV VF devices according to value set in PCIR_SRIOV_NUMVFS register
+ *
+ * This function is called when the VF enable bit in PCIR_SRIOV_CONTROL is switched to 0 from 1, i.e. disable
+ * the VF. Then, it deinit number of SRIOV VF devices according to value set in PCIR_SRIOV_NUMVFS register.
+ *
+ * @param[in] pf_vdev Pointer to physical function device.
+ *
+ * @return None.
+ *
  * @pre pf_vdev != NULL
  */
 static void disable_vfs(struct pci_vdev *pf_vdev)
@@ -262,10 +337,6 @@ static void disable_vfs(struct pci_vdev *pf_vdev)
 	}
 }
 
-/**
- * @pre vdev != NULL
- * @pre vdev->pdev != NULL
- */
 void init_vsriov(struct pci_vdev *vdev)
 {
 	struct pci_pdev *pdev = vdev->pdev;
@@ -274,10 +345,6 @@ void init_vsriov(struct pci_vdev *vdev)
 	vdev->sriov.caplen = pdev->sriov.caplen;
 }
 
-/**
- * @pre vdev != NULL
- * @pre vdev->pdev != NULL
- */
 void read_sriov_cap_reg(const struct pci_vdev *vdev, uint32_t offset, uint32_t bytes, uint32_t *val)
 {
 	if (!vdev->pdev->sriov.hide_sriov) {
@@ -288,10 +355,6 @@ void read_sriov_cap_reg(const struct pci_vdev *vdev, uint32_t offset, uint32_t b
 	}
 }
 
-/**
- * @pre vdev != NULL
- * @pre vdev->pdev != NULL
- */
 void write_sriov_cap_reg(struct pci_vdev *vdev, uint32_t offset, uint32_t bytes, uint32_t val)
 {
 
@@ -338,11 +401,11 @@ void write_sriov_cap_reg(struct pci_vdev *vdev, uint32_t offset, uint32_t bytes,
 	}
 }
 
-
-/**
- * @pre vdev != NULL
- */
 uint32_t sriov_bar_offset(const struct pci_vdev *vdev, uint32_t bar_idx)
 {
 	return (vdev->sriov.capoff + PCIR_SRIOV_VF_BAR_OFF + (bar_idx << 2U));
 }
+
+/**
+ * @}
+ */
