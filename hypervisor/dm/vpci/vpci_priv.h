@@ -205,12 +205,76 @@ void write_vmsi_cap_reg(struct pci_vdev *vdev, uint32_t offset, uint32_t bytes, 
 void deinit_vmsi(const struct pci_vdev *vdev);
 
 void init_vmsix_pt(struct pci_vdev *vdev);
+
+/*
+ * @brief Add MSI-X capability structure for virtual PCI device
+ *
+ * @param[in] vdev      Pointer to the virtual PCI device to access.
+ * @param[in] entry_num The number of MSIX table entries.
+ * @param[in] bar_num   The MSIX BAR number.
+ *
+ * @return Return 0 if success. Otherwise, return -1.
+ *
+ * @pre vdev != NULL
+ */
 int32_t add_vmsix_capability(struct pci_vdev *vdev, uint32_t entry_num, uint8_t bar_num);
+
+/**
+ * @brief Read MSI-X capability structure
+ *
+ * @param[in]  vdev   Pointer to the virtual PCI device to access.
+ * @param[in]  offset Offset to write the MSI-X capability register.
+ * @param[in]  bytes  Length to write the MSI-X capability register.
+ * @param[out] val    Value to be read out from MSI-X capability register.
+ *
+ * @return None.
+ *
+ * @pre vdev != NULL
+ * @pre vdev->pdev != NULL
+ */
 void read_vmsix_cap_reg(struct pci_vdev *vdev, uint32_t offset, uint32_t bytes, uint32_t *val);
+
+/**
+ * @brief Write MSI-X capability structure
+ *
+ * @param[in] vdev   Pointer to the virtual PCI device to access.
+ * @param[in] offset Offset to write the MSI-X capability register.
+ * @param[in] bytes  Length to write the MSI-X capability register.
+ * @param[in] val    Value to be writen into the MSI-X capability register.
+ *
+ * @return Return true if the value is written. Otherwise, return false.
+ *
+ * @pre vdev != NULL
+ */
 bool write_vmsix_cap_reg(struct pci_vdev *vdev, uint32_t offset, uint32_t bytes, uint32_t val);
 void read_pt_vmsix_cap_reg(struct pci_vdev *vdev, uint32_t offset, uint32_t bytes, uint32_t *val);
 void write_pt_vmsix_cap_reg(struct pci_vdev *vdev, uint32_t offset, uint32_t bytes, uint32_t val);
+
+/*
+ * @brief Read/write MSI-X table entry
+ *
+ * @param[in]     vdev   Pointer to the virtual PCI device to access.
+ * @param[in,out] io_req Pointer to IO request buffer.
+ *
+ * @return Return the entry index for normal access. Otherwise, return CONFIG_MAX_MSIX_TABLE_NUM.
+ *
+ * @pre vdev != NULL
+ * @pre io_req != NULL
+ * @pre mmio->address >= vdev->msix.mmio_gpa
+ */
 uint32_t rw_vmsix_table(struct pci_vdev *vdev, struct io_request *io_req);
+
+/*
+ * @brief Handle MMIO access to MSI-X table
+ *
+ * @param[in,out] io_req    Pointer to IO request buffer.
+ * @param[in]     priv_data Pointer to the virtual PCI device to access.
+ *
+ * @return Return 0.
+ *
+ * @pre io_req != NULL
+ * @pre priv_data != NULL
+ */
 int32_t vmsix_handle_table_mmio_access(struct io_request *io_req, void *priv_data);
 bool vpci_vmsix_enabled(const struct pci_vdev *vdev);
 void deinit_vmsix_pt(struct pci_vdev *vdev);

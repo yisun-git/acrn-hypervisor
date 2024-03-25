@@ -36,11 +36,17 @@
 #include "vpci_priv.h"
 
 /**
- * @brief Reading MSI-X Capability Structure
+ * @addtogroup vp-dm_vperipheral
  *
- * @pre vdev != NULL
- * @pre vdev->pdev != NULL
+ * @{
  */
+
+/**
+ * @file
+ * @brief This file declares functions to handle MSI-X capability and table.
+ *
+ */
+
 void read_vmsix_cap_reg(struct pci_vdev *vdev, uint32_t offset, uint32_t bytes, uint32_t *val)
 {
 	static const uint8_t msix_pt_mask[12U] = {
@@ -63,12 +69,6 @@ void read_vmsix_cap_reg(struct pci_vdev *vdev, uint32_t offset, uint32_t bytes, 
 	*val = (virt & ~pt_mask) | (phy & pt_mask);
 }
 
-/**
- * @brief Writing MSI-X Capability Structure
- *
- * @pre vdev != NULL
- * @pre vdev->pdev != NULL
- */
 bool write_vmsix_cap_reg(struct pci_vdev *vdev, uint32_t offset, uint32_t bytes, uint32_t val)
 {
 	static const uint8_t msix_ro_mask[12U] = {
@@ -88,11 +88,6 @@ bool write_vmsix_cap_reg(struct pci_vdev *vdev, uint32_t offset, uint32_t bytes,
 	return is_written;
 }
 
-/**
- * @pre vdev != NULL
- * @pre io_req != NULL
- * @pre mmio->address >= vdev->msix.mmio_gpa
- */
 uint32_t rw_vmsix_table(struct pci_vdev *vdev, struct io_request *io_req)
 {
 	struct acrn_mmio_request *mmio = &io_req->reqs.mmio_request;
@@ -144,19 +139,12 @@ uint32_t rw_vmsix_table(struct pci_vdev *vdev, struct io_request *io_req)
 	return index;
 }
 
-/**
- * @pre io_req != NULL
- * @pre priv_data != NULL
- */
 int32_t vmsix_handle_table_mmio_access(struct io_request *io_req, void *priv_data)
 {
 	(void)rw_vmsix_table((struct pci_vdev *)priv_data, io_req);
 	return 0;
 }
 
-/**
- * @pre vdev != NULL
- */
 int32_t add_vmsix_capability(struct pci_vdev *vdev, uint32_t entry_num, uint8_t bar_num)
 {
 	uint32_t table_size, i;
@@ -194,3 +182,7 @@ int32_t add_vmsix_capability(struct pci_vdev *vdev, uint32_t entry_num, uint8_t 
 	}
 	return ret;
 }
+
+/**
+ * @}
+ */
