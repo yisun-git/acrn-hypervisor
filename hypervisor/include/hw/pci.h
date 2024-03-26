@@ -413,6 +413,16 @@ bool is_plat_hidden_pdev(union pci_bdf bdf);
 bool pdev_need_bar_restore(const struct pci_pdev *pdev);
 void pdev_restore_bar(const struct pci_pdev *pdev);
 void pci_switch_to_mmio_cfg_ops(void);
+
+/**
+ * @brief Reserve interrupt remapping entries in VTD for vMSI-X on MSI
+ *
+ * @param[in] pdev Pointer to the physical PCI device to access.
+ *
+ * @return None.
+ *
+ * @pre pdev != NULL
+ */
 void reserve_vmsix_on_msi_irtes(struct pci_pdev *pdev);
 
 #endif /* PCI_H_ */

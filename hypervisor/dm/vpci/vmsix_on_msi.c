@@ -12,15 +12,38 @@
 #include <asm/board.h>
 #include "vpci_priv.h"
 
-#define PER_VECTOR_MASK_CAP 0x0100U
+/**
+ * @addtogroup vp-dm_vperipheral
+ *
+ * @{
+ */
 
-/* Pre-assumptions for vMSI-x on MSI emulation:
- * 1. The device is in vmsix_on_msi_devs array.
- * 2. The device should support MSI capability as well as per-vector mask
- * 3. The device doesn't support MSI-x capability.
- * 4. The device should have an unused BAR (this condition is checked inside init_vmsix_on_msi).
- * 5. HV doesn't emulate PBA according to physcial device status, the device driver should not rely on PBA
- *    for functionality.
+/**
+ * @file
+ * @brief This file implements functions to handle vMSI-X on MSI operations
+ *
+ */
+
+#define PER_VECTOR_MASK_CAP 0x0100U /**< Pre-defined Per Vector Mask bit */
+
+/**
+ * @brief Check if need to emulate vMSI-X on MSI
+ *
+ * @param[in]  pdev         Pointer to the physical PCI device to access.
+ * @param[out] vector_count Pointer to buffer of the count of vectors.
+ *
+ * @return Return true if need to emulate vMSI-X on MSI. Otherwise, return false.
+ *
+ * @pre pdev != NULL
+ * @pre vector_count != NULL
+ *
+ * @remark Pre-assumptions for vMSI-x on MSI emulation:
+ *         1. The device is in vmsix_on_msi_devs array.
+ *         2. The device should support MSI capability as well as per-vector mask
+ *         3. The device doesn't support MSI-x capability.
+ *         4. The device should have an unused BAR (this condition is checked inside init_vmsix_on_msi).
+ *         5. HV doesn't emulate PBA according to physcial device status, the device driver should not rely on PBA
+ *            for functionality.
  */
 static bool need_vmsix_on_msi_emulation(__unused struct pci_pdev *pdev, __unused uint16_t *vector_count)
 {
@@ -62,15 +85,20 @@ void reserve_vmsix_on_msi_irtes(struct pci_pdev *pdev)
 	}
 }
 
+/**
+ * @brief Get MSI mask bits
+ *
+ * @param[in] vdev Pointer to the virtual PCI device to access.
+ *
+ * @return MSI mask bits.
+ *
+ * @pre vdev != NULL
+ */
 static inline uint32_t get_mask_bits_offset(const struct pci_vdev *vdev)
 {
 	return vdev->msi.is_64bit ? (vdev->msix.capoff + 0x10U) : (vdev->msix.capoff + 0xCU);
 }
 
-/**
- * @pre vdev != NULL
- * @pre vdev->pdev != NULL
- */
 void init_vmsix_on_msi(struct pci_vdev *vdev)
 {
 	struct pci_pdev *pdev = vdev->pdev;
@@ -201,3 +229,7 @@ void remap_one_vmsix_entry_on_msi(struct pci_vdev *vdev, uint32_t index)
 	}
 	pci_pdev_write_cfg(pbdf, get_mask_bits_offset(vdev), 4U, mask_bits);
 }
+
+/**
+ * @}
+ */

@@ -279,8 +279,52 @@ int32_t vmsix_handle_table_mmio_access(struct io_request *io_req, void *priv_dat
 bool vpci_vmsix_enabled(const struct pci_vdev *vdev);
 void deinit_vmsix_pt(struct pci_vdev *vdev);
 
+/**
+ * @brief Initialize a virtual PCI device vMSI-X on MSI registers
+ *
+ * @param[in] vdev Pointer to the virtual PCI device.
+ *
+ * @return None.
+ *
+ * @pre vdev != NULL
+ * @pre vdev->pdev != NULL
+ *
+ * @remark Pre-assumptions for vMSI-x on MSI emulation:
+ *         1. The device should support MSI capability as well as per-vector mask
+ *         2. The device doesn't support MSI-x capability.
+ *         3. The device should have an unused BAR.
+ */
 void init_vmsix_on_msi(struct pci_vdev *vdev);
+
+/**
+ * @brief Write vMSI-X on MSI capability structure
+ *
+ * @param[in] vdev   Pointer to the virtual PCI device to access.
+ * @param[in] offset Offset to write the vMSI-X on MSI capability register.
+ * @param[in] bytes  Length to write the vMSI-X on MSI capability register.
+ * @param[in] val    Value to be writen into the vMSI-X on MSI capability register.
+ *
+ * @return None.
+ *
+ * @pre vdev != NULL
+ * @pre vdev->pdev != NULL
+ */
 void write_vmsix_cap_reg_on_msi(struct pci_vdev *vdev, uint32_t offset, uint32_t bytes, uint32_t val);
+
+/**
+ * @brief Create MSI-X entry and do interrupt remapping
+ *
+ * Write vector into register. Then, add MSI-X entry. If LAPIC passthrough is set, build the physical MSI
+ * and do interrupt remapping in VTD.
+ *
+ * @param[in] vdev  Pointer to the virtual PCI device to access.
+ * @param[in] index Index of the MSI-X vector.
+ *
+ * @return None.
+ *
+ * @pre vdev != NULL
+ * @pre vdev->pdev != NULL
+ */
 void remap_one_vmsix_entry_on_msi(struct pci_vdev *vdev, uint32_t index);
 
 /**
