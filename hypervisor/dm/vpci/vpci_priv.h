@@ -55,22 +55,53 @@
 #define VMSIX_MAX_ENTRY_TABLE_SIZE 2048U /**< Pre-defined vMSIX table size */
 #define VMSIX_ENTRY_TABLE_PBA_BAR_SIZE 4096U /**< Pre-defined vMSIX PBA table size */
 
+/**
+ * @brief Convert acrn_vpci instance to acrn_vm instance
+ *
+ * @param[in] vpci Pointer to a specified vpci structure
+ *
+ * @return Return a acrn_vm instance
+ *
+ * @pre vpci != NULL
+ */
 static inline struct acrn_vm *vpci2vm(const struct acrn_vpci *vpci)
 {
 	return container_of(vpci, struct acrn_vm, vpci);
 }
 
+/**
+ * @brief Check if the virtual PCI device is a quirk passthrough device
+ *
+ * @param[in] vdev Pointer to a virtual PCI device.
+ *
+ * @return Return true if the virtual PCI device is a quirk passthrough device. Otherwise, false.
+ *
+ * @pre vdev != NULL
+ */
 static inline bool is_quirk_ptdev(const struct pci_vdev *vdev)
 {
 	return ((vdev->flags & ACRN_PTDEV_QUIRK_ASSIGN) != 0U);
 }
 
+/**
+ * @brief Check if the input value is in range from lower to lower + len
+ *
+ * @param[in] vdev Pointer to a virtual PCI device.
+ *
+ * @return Return true if the input value is in range. Otherwise, false.
+ */
 static inline bool in_range(uint32_t value, uint32_t lower, uint32_t len)
 {
 	return ((value >= lower) && (value < (lower + len)));
 }
 
 /**
+ * @brief Check if the virtual PCI device supports MSI-X
+ *
+ * @param[in] vdev Pointer to a virtual PCI device.
+ *
+ * @return Return true if the virtual PCI device supports MSI-X. Otherwise, false.
+ *
  * @pre vdev != NULL
  */
 static inline bool has_msix_cap(const struct pci_vdev *vdev)
@@ -79,6 +110,13 @@ static inline bool has_msix_cap(const struct pci_vdev *vdev)
 }
 
 /**
+ * @brief Check if the input offset is in range of virtual PCI device MSI-X cap
+ *
+ * @param[in] vdev   Pointer to a virtual PCI device.
+ * @param[in] offset Offset to PCI config header.
+ *
+ * @return Return true if the offset is in range of virtual PCI device MSI-X cap. Otherwise, false.
+ *
  * @pre vdev != NULL
  */
 static inline bool msixcap_access(const struct pci_vdev *vdev, uint32_t offset)
@@ -89,12 +127,28 @@ static inline bool msixcap_access(const struct pci_vdev *vdev, uint32_t offset)
 /**
  * @pre vdev != NULL
  */
+/**
+ * @brief Check if the input offset is in virtual PCI device MSI-X table range
+ *
+ * @param[in] vdev   Pointer to a virtual PCI device.
+ * @param[in] offset Offset to PCI config header.
+ *
+ * @return Return true if the offset is in virtual PCI device MSI-X table range. Otherwise, false.
+ *
+ * @pre vdev != NULL
+ */
 static inline bool msixtable_access(const struct pci_vdev *vdev, uint32_t offset)
 {
 	return in_range(offset, vdev->msix.table_offset, vdev->msix.table_count * MSIX_TABLE_ENTRY_SIZE);
 }
 
-/*
+/**
+ * @brief Check if the virtual PCI device supports SRIOV
+ *
+ * @param[in] vdev Pointer to a virtual PCI device.
+ *
+ * @return Return true if the virtual PCI device supports SRIOV. Otherwise, false.
+ *
  * @pre vdev != NULL
  */
 static inline bool has_sriov_cap(const struct pci_vdev *vdev)
@@ -102,7 +156,14 @@ static inline bool has_sriov_cap(const struct pci_vdev *vdev)
 	return (vdev->sriov.capoff != 0U);
 }
 
-/*
+/**
+ * @brief Check if the input offset is in range of virtual PCI device SRIOV cap
+ *
+ * @param[in] vdev   Pointer to a virtual PCI device.
+ * @param[in] offset Offset to PCI config header.
+ *
+ * @return Return true if the offset is in range of virtual PCI device SRIOV cap. Otherwise, false.
+ *
  * @pre vdev != NULL
  */
 static inline bool sriovcap_access(const struct pci_vdev *vdev, uint32_t offset)
@@ -111,6 +172,13 @@ static inline bool sriovcap_access(const struct pci_vdev *vdev, uint32_t offset)
 }
 
 /**
+ * @brief Check if the input offset is in range of virtual PCI device vBARs
+ *
+ * @param[in] vdev   Pointer to a virtual PCI device.
+ * @param[in] offset Offset to PCI config header.
+ *
+ * @return Return true if the offset is in range of virtual PCI device vBARs. Otherwise, false.
+ *
  * @pre vdev != NULL
  */
 static inline bool vbar_access(const struct pci_vdev *vdev, uint32_t offset)
@@ -119,7 +187,11 @@ static inline bool vbar_access(const struct pci_vdev *vdev, uint32_t offset)
 }
 
 /**
- * @pre vdev != NULL
+ * @brief Check if the input offset is in range of PCI config header
+ *
+ * @param[in] offset Offset to PCI config header.
+ *
+ * @return Return true if the offset is in range of PCI config header. Otherwise, false.
  */
 static inline bool cfg_header_access(uint32_t offset)
 {
@@ -127,6 +199,12 @@ static inline bool cfg_header_access(uint32_t offset)
 }
 
 /**
+ * @brief Check if the virtual PCI device supports MSI
+ *
+ * @param[in] vdev Pointer to a virtual PCI device.
+ *
+ * @return Return true if the virtual PCI device supports MSI. Otherwise, false.
+ *
  * @pre vdev != NULL
  */
 static inline bool has_msi_cap(const struct pci_vdev *vdev)
@@ -135,6 +213,13 @@ static inline bool has_msi_cap(const struct pci_vdev *vdev)
 }
 
 /**
+ * @brief Check if the input offset is in range of virtual PCI device MSI cap
+ *
+ * @param[in] vdev   Pointer to a virtual PCI device.
+ * @param[in] offset Offset to PCI config header.
+ *
+ * @return Return true if the offset is in range of virtual PCI device MSI cap. Otherwise, false.
+ *
  * @pre vdev != NULL
  */
 static inline bool msicap_access(const struct pci_vdev *vdev, uint32_t offset)
@@ -276,6 +361,16 @@ uint32_t rw_vmsix_table(struct pci_vdev *vdev, struct io_request *io_req);
  * @pre priv_data != NULL
  */
 int32_t vmsix_handle_table_mmio_access(struct io_request *io_req, void *priv_data);
+
+/*
+ * @brief Check if the MSI-X is enabled
+ *
+ * @param[in]     vdev   Pointer to the virtual PCI device to access.
+ *
+ * @return Return true if MSI-X is enabled. Otherwise, return false.
+ *
+ * @pre vdev != NULL
+ */
 bool vpci_vmsix_enabled(const struct pci_vdev *vdev);
 void deinit_vmsix_pt(struct pci_vdev *vdev);
 
@@ -478,6 +573,7 @@ typedef void (*unmap_pcibar)(struct pci_vdev *vdev, uint32_t bar_idx);
  *
  * @return N/A
  *
+ * @pre vdev != NULL
  * @pre unmap_cb != NULL
  *
  * @post vdev->vbars[bar_idx] (or vdev->vbars[bar_idx - 1] if vdev->vbars[bar_idx]->is_mem64hi == TRUE) is updated.

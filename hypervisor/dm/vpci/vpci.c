@@ -39,6 +39,27 @@
 #include <hash.h>
 #include <board_info.h>
 
+/**
+ * @addtogroup vp-dm_vperipheral
+ *
+ * @{
+ */
+
+/**
+ * @file
+ *
+ * @brief This file implements all external APIs that shall be provided by vPCI component.
+ *
+ * This file implements all external functions that shall be provided by the vPCI part of vp-dm.vperipheral module.
+ * The vPCI devices includes: vhostbirdge and some passthrough devices. The vhostbridge is a pure virtual hostbridge,
+ * which is not related with the physical hostbridge. But to the passthrough PCI devices, some operations is based on
+ * their virtual configuration space, some are mapped to their physical configuration space, like MSI and BAR registers.
+ *
+ * It defines one initial function, one de-init function, and four callback functions (read/write address and data
+ * register) which are registered and called when PCI port IO is accessed. It also defines some helper functions to
+ * implement the features that are commonly used in this file. In addition, it defines some decomposed functions to
+ * improve the readability of the code.
+ */
 
 static int32_t vpci_init_vdevs(struct acrn_vm *vm);
 static int32_t vpci_read_cfg(struct acrn_vpci *vpci, union pci_bdf bdf, uint32_t offset, uint32_t bytes, uint32_t *val);
@@ -46,6 +67,14 @@ static int32_t vpci_write_cfg(struct acrn_vpci *vpci, union pci_bdf bdf, uint32_
 static struct pci_vdev *find_available_vdev(struct acrn_vpci *vpci, union pci_bdf bdf);
 
 /**
+ * @brief Read CFG_ADDR register value
+ *
+ * @param[in,out] vcpu  The data structure of acrn_vcpu to read CFG_ADDR.
+ * @param[in]     addr  The address of I/O ports.
+ * @param[in]     bytes The size to read.
+ *
+ * @return Return true.
+ *
  * @pre vcpu != NULL
  * @pre vcpu->vm != NULL
  */
@@ -66,11 +95,21 @@ static bool vpci_pio_cfgaddr_read(struct acrn_vcpu *vcpu, uint16_t addr, size_t 
 }
 
 /**
- * @pre vcpu != NULL
- * @pre vcpu->vm != NULL
+ * @brief Write value into CFG_ADDR register
+ *
+ * @param[in,out] vcpu  The data structure of acrn_vcpu to write CFG_ADDR.
+ * @param[in]     addr  The address of I/O ports.
+ * @param[in]     bytes The size to write.
+ * @param[in]     val   The value to write.
+ *
+ * @return True for success. Otherwise, false.
  *
  * @retval true on success.
  * @retval false. (ACRN will deliver this IO request to DM to handle for post-launched VM)
+ *
+ * @pre vcpu != NULL
+ * @pre vcpu->vm != NULL
+ * @pre vcpu->vm != NULL
  */
 static bool vpci_pio_cfgaddr_write(struct acrn_vcpu *vcpu, uint16_t addr, size_t bytes, uint32_t val)
 {
@@ -102,14 +141,22 @@ static bool vpci_pio_cfgaddr_write(struct acrn_vcpu *vcpu, uint16_t addr, size_t
 }
 
 /**
+ * @brief Read CFG_DATA register value
+ *
+ * @param[in,out] vcpu  The data structure of acrn_vcpu to read CFG_DATA.
+ * @param[in]     addr  The address of I/O ports.
+ * @param[in]     bytes The size to read.
+ *
+ * @return True for success. Otherwise, false.
+ *
+ * @retval true on success.
+ * @retval false. (ACRN will deliver this IO request to DM to handle for post-launched VM)
+ *
  * @pre vcpu != NULL
  * @pre vcpu->vm != NULL
  * @pre vcpu->vm->vm_id < CONFIG_MAX_VM_NUM
  * @pre (get_vm_config(vcpu->vm->vm_id)->load_order == PRE_LAUNCHED_VM)
  *	|| (get_vm_config(vcpu->vm->vm_id)->load_order == SERVICE_VM)
- *
- * @retval true on success.
- * @retval false. (ACRN will deliver this IO request to DM to handle for post-launched VM)
  */
 static bool vpci_pio_cfgdata_read(struct acrn_vcpu *vcpu, uint16_t addr, size_t bytes)
 {
@@ -135,14 +182,23 @@ static bool vpci_pio_cfgdata_read(struct acrn_vcpu *vcpu, uint16_t addr, size_t 
 }
 
 /**
+ * @brief Write value to CFG_DATA register
+ *
+ * @param[in,out] vcpu  The data structure of acrn_vcpu to write CFG_DATA.
+ * @param[in]     addr  The address of I/O ports.
+ * @param[in]     bytes The size to write.
+ * @param[in]     val   The value to write.
+ *
+ * @return True for success. Otherwise, false.
+ *
+ * @retval true on success.
+ * @retval false. (ACRN will deliver this IO request to DM to handle for post-launched VM)
+ *
  * @pre vcpu != NULL
  * @pre vcpu->vm != NULL
  * @pre vcpu->vm->vm_id < CONFIG_MAX_VM_NUM
  * @pre (get_vm_config(vcpu->vm->vm_id)->load_order == PRE_LAUNCHED_VM)
  *	|| (get_vm_config(vcpu->vm->vm_id)->load_order == SERVICE_VM)
- *
- * @retval true on success.
- * @retval false. (ACRN will deliver this IO request to DM to handle for post-launched VM)
  */
 static bool vpci_pio_cfgdata_write(struct acrn_vcpu *vcpu, uint16_t addr, size_t bytes, uint32_t val)
 {
@@ -165,10 +221,17 @@ static bool vpci_pio_cfgdata_write(struct acrn_vcpu *vcpu, uint16_t addr, size_t
 }
 
 /**
- * @pre io_req != NULL && private_data != NULL
+ * @brief Handle MMIO access to virtual PCI device
+ *
+ * @param[in,out] io_req       Pointer to io_request.
+ * @param[in]     private_data Pointer to acrn_vpci.
+ *
+ * @return 0 for success. Otherwise, false.
  *
  * @retval 0 on success.
  * @retval other on false. (ACRN will deliver this MMIO request to DM to handle for post-launched VM)
+ *
+ * @pre io_req != NULL && private_data != NULL
  */
 static int32_t vpci_mmio_cfg_access(struct io_request *io_req, void *private_data)
 {
@@ -207,10 +270,6 @@ static int32_t vpci_mmio_cfg_access(struct io_request *io_req, void *private_dat
 	return ret;
 }
 
-/**
- * @pre vm != NULL
- * @pre vm->vm_id < CONFIG_MAX_VM_NUM
- */
 int32_t init_vpci(struct acrn_vm *vm)
 {
 	struct vm_io_range pci_cfgaddr_range = {
@@ -227,10 +286,12 @@ int32_t init_vpci(struct acrn_vm *vm)
 	struct pci_mmcfg_region *pci_mmcfg;
 	int32_t ret = 0;
 
+	/** Create IOMMU domain for the input VM. Enabling IOMMU domain will be done later. */
 	vm->iommu = create_iommu_domain(vm->vm_id, hva2hpa(vm->arch_vm.nworld_eptp), 48U);
 
+	/** Get the input VM's configuration and set up PCI MMCONFIG addresses. */
 	vm_config = get_vm_config(vm->vm_id);
-	/* virtual PCI MMCONFIG for Service VM is same with the physical value */
+	/** Virtual PCI MMCONFIG for Service VM is same with the physical value. */
 	if (vm_config->load_order == SERVICE_VM) {
 		pci_mmcfg = get_mmcfg_region();
 		vm->vpci.pci_mmcfg = *pci_mmcfg;
@@ -248,18 +309,19 @@ int32_t init_vpci(struct acrn_vm *vm)
 		vm->vpci.res64.end = USER_VM_VIRT_PCI_MEMLIMIT64;
 	}
 
-	/* Build up vdev list for vm */
+	/** Build up vdev list for vm. */
 	ret = vpci_init_vdevs(vm);
 
 	if (ret == 0) {
+		/** Set up MMIO access handler. */
 		register_mmio_emulation_handler(vm, vpci_mmio_cfg_access, vm->vpci.pci_mmcfg.address,
 			vm->vpci.pci_mmcfg.address + get_pci_mmcfg_size(&vm->vpci.pci_mmcfg), &vm->vpci, false);
 
-		/* Intercept and handle I/O ports CF8h */
+		/** Intercept and handle I/O ports CF8h. */
 		register_pio_emulation_handler(vm, PCI_CFGADDR_PIO_IDX, &pci_cfgaddr_range,
 			vpci_pio_cfgaddr_read, vpci_pio_cfgaddr_write);
 
-		/* Intercept and handle I/O ports CFCh -- CFFh */
+		/** Intercept and handle I/O ports CFCh -- CFFh. */
 		register_pio_emulation_handler(vm, PCI_CFGDATA_PIO_IDX, &pci_cfgdata_range,
 			vpci_pio_cfgdata_read, vpci_pio_cfgdata_write);
 
@@ -269,19 +331,16 @@ int32_t init_vpci(struct acrn_vm *vm)
 	return ret;
 }
 
-/**
- * @pre vm != NULL
- * @pre vm->vm_id < CONFIG_MAX_VM_NUM
- */
 void deinit_vpci(struct acrn_vm *vm)
 {
 	struct pci_vdev *vdev, *parent_vdev;
 	uint32_t i;
 
+	/** Deinit each virtual PCI device from the VM. */
 	for (i = 0U; i < vm->vpci.pci_vdev_cnt; i++) {
 		vdev = (struct pci_vdev *) &(vm->vpci.pci_vdevs[i]);
 
-		/* Only deinit the VM's own devices */
+		/** Only deinit the VM's own devices. */
 		if (vdev->user == vdev) {
 			parent_vdev = vdev->parent_user;
 
@@ -295,14 +354,21 @@ void deinit_vpci(struct acrn_vm *vm)
 		}
 	}
 
+	/** Release Passthrough PCI devices' irq mapping for the VM. */
 	ptdev_release_all_entries(vm);
 	(void)memset(&vm->vpci, 0U, sizeof(struct acrn_vpci));
 
-	/* Free iommu */
+	/** Free IOMMU. */
 	destroy_iommu_domain(vm->iommu);
 }
 
 /**
+ * @brief Assign a virtual PCI device to VM's IOMMU domain
+ *
+ * @param[in] vdev Pointer to a virtual PCI device.
+ *
+ * @return None.
+ *
  * @pre vdev != NULL
  * @pre vdev->vpci != NULL
  * @pre vpci2vm(vdev->vpci)->iommu != NULL
@@ -320,6 +386,12 @@ static void assign_vdev_pt_iommu_domain(struct pci_vdev *vdev)
 }
 
 /**
+ * @brief Remove a virtual PCI device from VM's IOMMU domain
+ *
+ * @param[in] vdev Pointer to a virtual PCI device.
+ *
+ * @return None.
+ *
  * @pre vdev != NULL
  * @pre vdev->vpci != NULL
  * @pre vpci2vm(vdev->vpci)->iommu != NULL
@@ -344,19 +416,21 @@ static void remove_vdev_pt_iommu_domain(const struct pci_vdev *vdev)
 }
 
 /**
- * @brief Find an available vdev structure with BDF from a specified vpci structure.
- *        If the vdev's vpci is the same as the specified vpci, the vdev is available.
- *        If the vdev's vpci is not the same as the specified vpci, the vdev has already
- *        been assigned and it is unavailable for Service VM.
- *        If the vdev's vpci is NULL, the vdev is a orphan/zombie instance, it can't
- *        be accessed by any vpci.
+ * @brief Find an available vdev structure with BDF from a specified vpci structure
  *
- * @param vpci Pointer to a specified vpci structure
- * @param bdf  Indicate the vdev's BDF
+ * This function is used to find an an available vdev structure with BDF:
+ * - If the vdev's vpci is the same as the specified vpci, the vdev is available.
+ * - If the vdev's vpci is not the same as the specified vpci, the vdev has already
+ *   been assigned and it is unavailable for Service VM.
+ * - If the vdev's vpci is NULL, the vdev is a orphan/zombie instance, it can't
+ *   be accessed by any vpci.
  *
- * @pre vpci != NULL
+ * @param[in] vpci Pointer to a specified vpci structure
+ * @param[in] bdf  Indicate the vdev's BDF
  *
  * @return Return a available vdev instance, otherwise return NULL
+ *
+ * @pre vpci != NULL
  */
 static struct pci_vdev *find_available_vdev(struct acrn_vpci *vpci, union pci_bdf bdf)
 {
@@ -377,6 +451,15 @@ static struct pci_vdev *find_available_vdev(struct acrn_vpci *vpci, union pci_bd
 	return vdev;
 }
 
+/**
+ * @brief Initialize a passthrough virtual PCI device
+ *
+ * @param[in] vdev Pointer to a virtual PCI device.
+ *
+ * @return None.
+ *
+ * @pre vdev != NULL
+ */
 static void vpci_init_pt_dev(struct pci_vdev *vdev)
 {
 	vdev->parent_user = NULL;
@@ -395,6 +478,15 @@ static void vpci_init_pt_dev(struct pci_vdev *vdev)
 	assign_vdev_pt_iommu_domain(vdev);
 }
 
+/**
+ * @brief De-initialize a passthrough virtual PCI device
+ *
+ * @param[in] vdev Pointer to a virtual PCI device.
+ *
+ * @return None.
+ *
+ * @pre vdev != NULL
+ */
 static void vpci_deinit_pt_dev(struct pci_vdev *vdev)
 {
 	deinit_vdev_pt(vdev);
@@ -406,6 +498,17 @@ static void vpci_deinit_pt_dev(struct pci_vdev *vdev)
 	vdev->parent_user = NULL;
 }
 
+/**
+ * @brief Data structure to config header permission.
+ *
+ * The pt_mask decides which PCI config registers can be passthrough. The ro_mask decides
+ * which PCI config registers can be writable.
+ *
+ * @consistency N/A
+ * @alignment N/A
+ *
+ * @remark N/A
+ */
 struct cfg_header_perm {
 	/* For each 4-byte register defined in PCI config space header,
 	 * there is one bit dedicated for it in pt_mask and ro_mask.
@@ -432,8 +535,22 @@ static const struct cfg_header_perm cfg_hdr_perm = {
 	.ro_mask = (uint16_t)~0x03f2U
 };
 
-
-/*
+/**
+ * @brief Read PCI config header
+ *
+ * @param[in]  vdev   Pointer to a virtual PCI device.
+ * @param[in]  offset Offset to read PCI config header.
+ * @param[in]  bytes  Size to read PCI config header.
+ * @param[out] val    Pointer to buffer of the value read out from PCI config header.
+ *
+ * @return Integer for success or failure.
+ *
+ * @retval 0 on success.
+ * @retval -ENODEV if it tries to read QUIRK PT device PCIR_BIOS.
+ *
+ * @pre vdev != NULL
+ * @pre vdev->pdev != NULL
+ * @pre val != NULL
  * @pre offset + bytes < PCI_CFG_HEADER_LENGTH
  */
 static int32_t read_cfg_header(const struct pci_vdev *vdev,
@@ -468,7 +585,21 @@ static int32_t read_cfg_header(const struct pci_vdev *vdev,
 	return ret;
 }
 
-/*
+/**
+ * @brief Write PCI config header
+ *
+ * @param[in] vdev   Pointer to a virtual PCI device.
+ * @param[in] offset Offset to read PCI config header.
+ * @param[in] bytes  Size to read PCI config header.
+ * @param[in] val    Value to be written into PCI config header.
+ *
+ * @return Integer for success or failure.
+ *
+ * @retval 0 on success.
+ * @retval -ENODEV if it tries to write QUIRK PT device PCIR_BIOS.
+ *
+ * @pre vdev != NULL
+ * @pre vdev->pdev != NULL
  * @pre offset + bytes < PCI_CFG_HEADER_LENGTH
  */
 static int32_t write_cfg_header(struct pci_vdev *vdev,
@@ -518,6 +649,22 @@ static int32_t write_cfg_header(struct pci_vdev *vdev,
 	return ret;
 }
 
+/**
+ * @brief Write passthrough device register
+ *
+ * @param[in] vdev   Pointer to a virtual PCI device.
+ * @param[in] offset Offset to read PCI config header.
+ * @param[in] bytes  Size to read PCI config header.
+ * @param[in] val    Value to be written into register.
+ *
+ * @return Integer for success or failure.
+ *
+ * @retval 0 on success.
+ * @retval -ENODEV if it tries to write QUIRK PT device register.
+ *
+ * @pre vdev != NULL
+ * @pre vdev->pdev != NULL
+ */
 static int32_t write_pt_dev_cfg(struct pci_vdev *vdev, uint32_t offset,
 		uint32_t bytes, uint32_t val)
 {
@@ -551,6 +698,22 @@ static int32_t write_pt_dev_cfg(struct pci_vdev *vdev, uint32_t offset,
 	return ret;
 }
 
+/**
+ * @brief Read passthrough device register
+ *
+ * @param[in]  vdev   Pointer to a virtual PCI device.
+ * @param[in]  offset Offset to read PCI config header.
+ * @param[in]  bytes  Size to read PCI config header.
+ * @param[out] val    Pointer to buffer of value read out from register.
+ *
+ * @return Integer for success or failure.
+ *
+ * @retval 0 on success.
+ * @retval -ENODEV if it tries to write QUIRK PT device register.
+ *
+ * @pre vdev != NULL
+ * @pre vdev->pdev != NULL
+ */
 static int32_t read_pt_dev_cfg(struct pci_vdev *vdev, uint32_t offset,
 		uint32_t bytes, uint32_t *val)
 {
@@ -581,6 +744,9 @@ static int32_t read_pt_dev_cfg(struct pci_vdev *vdev, uint32_t offset,
 	return ret;
 }
 
+/**
+ * @brief A set of callback functions used to operate the virtual PCI device.
+ */
 static const struct pci_vdev_ops pci_pt_dev_ops = {
 	.init_vdev	= vpci_init_pt_dev,
 	.deinit_vdev	= vpci_deinit_pt_dev,
@@ -589,7 +755,22 @@ static const struct pci_vdev_ops pci_pt_dev_ops = {
 };
 
 /**
+ * @brief Read virtual PCI device config
+ *
+ * @param[in]  vpci   The data structure of acrn_vpci to be searched in.
+ * @param[in]  bdf    The data structure of PCI device BDF.
+ * @param[in]  offset The offset of the config to read.
+ * @param[in]  bytes  The size to read.
+ * @param[out] val    The value to be read out.
+ *
+ * @return 0 If success, error codes if errors.
+ *
+ * @retval 0 Success.
+ * @retval -ENODEV If there is no vdev can be found and vpci corresponds to a post-launched VM.
+ *
  * @pre vpci != NULL
+ *
+ * @remark N/A
  */
 static int32_t vpci_read_cfg(struct acrn_vpci *vpci, union pci_bdf bdf,
 	uint32_t offset, uint32_t bytes, uint32_t *val)
@@ -616,7 +797,22 @@ static int32_t vpci_read_cfg(struct acrn_vpci *vpci, union pci_bdf bdf,
 }
 
 /**
+ * @brief Write virtual PCI device config
+ *
+ * @param[in] vpci   The data structure of acrn_vpci to be searched in.
+ * @param[in] bdf    The data structure of PCI device BDF.
+ * @param[in] offset The offset of the config to write.
+ * @param[in] bytes  The size to write.
+ * @param[in] val    The value to write.
+ *
+ * @return 0 If success, error codes if errors.
+ *
+ * @retval 0 Success.
+ * @retval -ENODEV If there is no vdev can be found and vpci corresponds to a post-launched VM.
+ *
  * @pre vpci != NULL
+ *
+ * @remark N/A
  */
 static int32_t vpci_write_cfg(struct acrn_vpci *vpci, union pci_bdf bdf,
 	uint32_t offset, uint32_t bytes, uint32_t val)
@@ -643,24 +839,6 @@ static int32_t vpci_write_cfg(struct acrn_vpci *vpci, union pci_bdf bdf,
 	return ret;
 }
 
-/**
- * @brief Initialize a vdev structure.
- *
- * The function vpci_init_vdev is used to initialize a vdev structure with a PCI device configuration(dev_config)
- * on a specified vPCI bus(vpci). If the function vpci_init_vdev initializes a SRIOV Virtual Function(VF) vdev structure,
- * the parameter parent_pf_vdev is the VF associated Physical Function(PF) vdev structure, otherwise the parameter parent_pf_vdev is NULL.
- * The caller of the function vpci_init_vdev should guarantee execution atomically.
- *
- * @param vpci              Pointer to a vpci structure
- * @param dev_config        Pointer to a dev_config structure of the vdev
- * @param parent_pf_vdev    If the parameter def_config points to a SRIOV VF vdev, this parameter parent_pf_vdev indicates the parent PF vdev.
- *                          Otherwise, it is NULL.
- *
- * @pre vpci != NULL
- * @pre vpci.pci_vdev_cnt <= CONFIG_MAX_PCI_DEV_NUM
- *
- * @return If there's a successfully initialized vdev structure return it, otherwise return NULL;
- */
 struct pci_vdev *vpci_init_vdev(struct acrn_vpci *vpci, struct acrn_vm_pci_dev_config *dev_config, struct pci_vdev *parent_pf_vdev)
 {
 	struct pci_vdev *vdev = &vpci->pci_vdevs[vpci->pci_vdev_cnt];
@@ -688,7 +866,17 @@ struct pci_vdev *vpci_init_vdev(struct acrn_vpci *vpci, struct acrn_vm_pci_dev_c
 }
 
 /**
+ * @brief Initialize the VM's all virtual PCI devices
+ *
+ * @param[in,out] vm The target VM's acrn_vm structure.
+ *
+ * @return 0 for success, otherwise -EIO.
+ *
  * @pre vm != NULL
+ *
+ * @post vpci internal pci_vdev list is updated with initialized virtual device.
+ *
+ * @remark N/A
  */
 static int32_t vpci_init_vdevs(struct acrn_vm *vm)
 {
@@ -711,12 +899,6 @@ static int32_t vpci_init_vdevs(struct acrn_vm *vm)
 	return ret;
 }
 
-/**
- * @brief assign a PCI device from Service VM to target post-launched VM.
- *
- * @pre tgt_vm != NULL
- * @pre pcidev != NULL
- */
 int32_t vpci_assign_pcidev(struct acrn_vm *tgt_vm, struct acrn_pcidev *pcidev)
 {
 	int32_t ret = 0;
@@ -791,12 +973,6 @@ int32_t vpci_assign_pcidev(struct acrn_vm *tgt_vm, struct acrn_pcidev *pcidev)
 	return ret;
 }
 
-/**
- * @brief deassign a PCI device from target post-launched VM to Service VM.
- *
- * @pre tgt_vm != NULL
- * @pre pcidev != NULL
- */
 int32_t vpci_deassign_pcidev(struct acrn_vm *tgt_vm, struct acrn_pcidev *pcidev)
 {
 	int32_t ret = 0;
@@ -827,9 +1003,6 @@ int32_t vpci_deassign_pcidev(struct acrn_vm *tgt_vm, struct acrn_pcidev *pcidev)
 	return ret;
 }
 
-/*
- * @pre unmap_cb != NULL
- */
 void vpci_update_one_vbar(struct pci_vdev *vdev, uint32_t bar_idx, uint32_t val,
 		map_pcibar map_cb, unmap_pcibar unmap_cb)
 {
@@ -846,16 +1019,6 @@ void vpci_update_one_vbar(struct pci_vdev *vdev, uint32_t bar_idx, uint32_t val,
 	}
 }
 
-/**
- * @brief Add emulated legacy PCI capability support for virtual PCI device
- *
- * @param vdev     Pointer to vdev data structure
- * @param capdata  Pointer to buffer that holds the capability data to be added.
- * @param caplen   Length of buffer that holds the capability data to be added.
- *
- * @pre vdev != NULL
- * @pre vdev->vpci != NULL
- */
 uint32_t vpci_add_capability(struct pci_vdev *vdev, uint8_t *capdata, uint8_t caplen)
 {
 #define CAP_START_OFFSET PCI_CFG_HEADER_LENGTH
@@ -864,7 +1027,7 @@ uint32_t vpci_add_capability(struct pci_vdev *vdev, uint8_t *capdata, uint8_t ca
 	uint32_t sts;
 	uint32_t ret = 0U;
 
-	reallen = roundup(caplen, 4U); /* dword aligned */
+	reallen = roundup(caplen, 4U); /** dword aligned */
 
 	sts = pci_vdev_read_vcfg(vdev, PCIR_STATUS, 2U);
 	if ((sts & PCIM_STATUS_CAPPRESENT) == 0U) {
@@ -873,9 +1036,9 @@ uint32_t vpci_add_capability(struct pci_vdev *vdev, uint8_t *capdata, uint8_t ca
 		capoff = vdev->free_capoff;
 	}
 
-	/* Check if we have enough space */
+	/** Check if we have enough space. */
 	if (((uint16_t)capoff + reallen) <= PCI_CONFIG_SPACE_SIZE) {
-		/* Set the previous capability pointer */
+		/** Set the previous capability pointer. */
 		if ((sts & PCIM_STATUS_CAPPRESENT) == 0U) {
 			pci_vdev_write_vcfg(vdev, PCIR_CAP_PTR, 1U, capoff);
 			pci_vdev_write_vcfg(vdev, PCIR_STATUS, 2U, sts|PCIM_STATUS_CAPPRESENT);
@@ -883,10 +1046,10 @@ uint32_t vpci_add_capability(struct pci_vdev *vdev, uint8_t *capdata, uint8_t ca
 			pci_vdev_write_vcfg(vdev, vdev->prev_capoff + 1U, 1U, capoff);
 		}
 
-		/* Copy the capability */
+		/** Copy the capability. */
 		(void)memcpy_s((void *)&vdev->cfgdata.data_8[capoff], caplen, (void *)capdata, caplen);
 
-		/* Set the next capability pointer */
+		/** Set the next capability pointer. */
 		pci_vdev_write_vcfg(vdev, capoff + 1U, 1U, 0U);
 
 		vdev->prev_capoff = capoff;
@@ -911,3 +1074,7 @@ bool vpci_vmsix_enabled(const struct pci_vdev *vdev)
 	}
 	return ret;
 }
+
+/**
+ * @}
+ */
